@@ -4,6 +4,7 @@
 #include <random>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 struct Task {
     int mDeadline;
@@ -100,7 +101,7 @@ std::vector<std::pair<std::string, std::string>> createInitialSolution()
             solution.push_back(std::make_pair(std::to_string(i), std::to_string(mcp) + "." + std::to_string(core)));
         }
     }
-    
+
     std::cout << "Initial solution created" << std::endl;
     return solution;
 }
@@ -110,4 +111,6 @@ int main()
     readIn();
 
     createInitialSolution();
+
+    return 0;
 }
