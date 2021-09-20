@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 #include <algorithm>
+#include <string>
 
 struct Task {
     int mDeadline;
@@ -24,15 +25,14 @@ struct MCP {
     std::vector<Core> mCores;
 }typedef MCP;
 
-
 std::vector<Task> tasks;
 std::vector<MCP> platform;
 
-void readIn()
+void readIn(std::string fileName)
 {
     pugi::xml_document doc;
 
-    pugi::xml_parse_result result = doc.load_file("Exercise1/small.xml");
+    pugi::xml_parse_result result = doc.load_file(fileName.c_str());
     if(!result)
         std::cout << "Didn't find the specified file" << std::endl;
 
@@ -108,7 +108,7 @@ std::vector<std::pair<std::string, std::string>> createInitialSolution()
 
 int main()
 {
-    readIn();
+    readIn("Exercise1/small.xml");
 
     createInitialSolution();
 
