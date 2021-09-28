@@ -6,6 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <tuple>
 
 struct Task {
     int mDeadline;
@@ -28,13 +29,16 @@ struct MCP {
 std::vector<Task> tasks;
 std::vector<MCP> platform;
 
-void readIn(std::string fileName)
+bool readIn(std::string fileName)
 {
     pugi::xml_document doc;
 
     pugi::xml_parse_result result = doc.load_file(fileName.c_str());
     if(!result)
+    {
         std::cout << "Didn't find the specified file" << std::endl;
+        return false;
+    }
 
 
     for(pugi::xml_node readinTask : doc.child("Model").child("Application").children("Task"))
@@ -63,16 +67,17 @@ void readIn(std::string fileName)
         platform.push_back(mcp);
     }
     std::cout << "Read in success" << std::endl;
+    return true;
 }
 
-bool checkIfAllCoreHasTasks(std::vector<std::pair<std::string, std::string>> solution)
+bool checkIfAllCoreHasTasks(std::vector<std::tuple<int, int, int>> solution)
 {
     for(unsigned i = 0; i < platform.size(); ++i)
     {
         for(unsigned j = 0; j < platform.at(i).mCores.size(); ++j)
         {
-            if(std::find_if(solution.begin(), solution.end(), [i, j](std::pair<std::string, std::string > pair){
-                return pair.second.compare(std::to_string(i) + "." + std::to_string(j)) == 0;
+            if(std::find_if(solution.begin(), solution.end(), [i, j](std::tuple<int, int, int> element){
+                return std::get<1>(element) == i && std::get<2>(element) == j;
                 }) == solution.end())
                 return false;
         }
@@ -82,9 +87,9 @@ bool checkIfAllCoreHasTasks(std::vector<std::pair<std::string, std::string>> sol
 }
 
 //first task id, second mcpid.coreid
-std::vector<std::pair<std::string, std::string>> createInitialSolution()
+std::vector<std::tuple<int, int, int>> createInitialSolution()
 {
-    std::vector<std::pair<std::string, std::string>> solution;
+    std::vector<std::tuple<int, int, int>> solution;
 
     std::random_device dev;
     std::mt19937 rng(dev());
@@ -98,7 +103,7 @@ std::vector<std::pair<std::string, std::string>> createInitialSolution()
             std::uniform_int_distribution<std::mt19937::result_type> coreRandom(0, platform.at(mcp).mCores.size() - 1);
             int core = coreRandom(rng);
 
-            solution.push_back(std::make_pair(std::to_string(i), std::to_string(mcp) + "." + std::to_string(core)));
+            solution.push_back(std::make_tuple(i, mcp, core));
         }
     }
 
@@ -108,7 +113,8 @@ std::vector<std::pair<std::string, std::string>> createInitialSolution()
 
 int main()
 {
-    readIn("Exercise1/small.xml");
+    if(!readIn("Exercise1/small.xml"))
+        return -1;
 
     createInitialSolution();
 
