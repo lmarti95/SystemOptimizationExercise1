@@ -253,7 +253,6 @@ bool calculateProbability(double delta, double temp)
     std::uniform_real_distribution<double> generate(0.0, 1.0);
 
     double exponential = exp((-1 / temp) * delta);
-    srand((unsigned)time(NULL));
     double probability = generate(rng);
     return exponential >= probability;
 }
