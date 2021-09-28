@@ -29,6 +29,8 @@ struct MCP {
 std::vector<Task> tasks;
 std::vector<MCP> platform;
 
+int deadlineSum = 0;
+
 bool readIn(std::string fileName)
 {
     pugi::xml_document doc;
@@ -51,6 +53,8 @@ bool readIn(std::string fileName)
         t.mPriority = 1.0 / (double)t.mDeadline;
 
         tasks.push_back(t);
+
+        deadlineSum += t.mDeadline;
     }
 
     for(pugi::xml_node readinMCP : doc.child("Model").child("Platform").children("MCP"))
@@ -86,6 +90,80 @@ bool checkIfAllCoreHasTasks(std::vector<std::tuple<int, int, int>> solution)
     return true;
 }
 
+long long gcd(long long int a, long long int b)
+{
+    if(b == 0)
+        return a;
+    return gcd(b, a % b);
+}
+
+long long lcm(long long a, long long b)
+{
+    return (a / gcd(a, b)) * b;
+}
+
+bool checkCoreDeadline(int i, int j, std::vector<std::tuple<int, int, int>> aSolution)
+{
+    std::vector<int> taskIDs;
+    for(auto& element : aSolution)
+    {
+        if(std::get<1>(element) == i && std::get<2>(element))
+        {
+            taskIDs.push_back(std::get<0>(element));
+        }
+    }
+
+    long long commonDeadline = tasks.at(taskIDs.at(0)).mDeadline;
+    if(taskIDs.size() > 1)
+    {
+        for(unsigned int i = 1; i < taskIDs.size(); ++i)
+        {
+            commonDeadline = lcm(commonDeadline, tasks.at(taskIDs.at(i)).mDeadline);
+        }
+    }
+
+    long long resourceSum = 0;
+
+    for(unsigned int i = 0; i < taskIDs.size(); ++i)
+    {
+        resourceSum += tasks.at(taskIDs.at(i)).mDeadline / commonDeadline * tasks.at(taskIDs.at(i)).mWcet;
+    }
+
+    if(resourceSum > commonDeadline)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
+
+bool checkDeadline(std::vector<std::tuple<int, int, int>> aSolution)
+{
+    for(unsigned i = 0; i < platform.size(); ++i)
+    {
+        for(unsigned j = 0; j < platform.at(i).mCores.size(); ++j)
+        {
+            if(!checkCoreDeadline(i, j, aSolution))
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool check(std::vector<std::tuple<int, int, int>> aSolution)
+{
+    if(!checkIfAllCoreHasTasks(aSolution))
+        return false;
+    if(!checkDeadline(aSolution))
+        return false;
+    return true;
+}
+
 //first task id, second mcpid.coreid
 std::vector<std::tuple<int, int, int>> createInitialSolution()
 {
@@ -94,7 +172,7 @@ std::vector<std::tuple<int, int, int>> createInitialSolution()
     std::random_device dev;
     std::mt19937 rng(dev());
     std::uniform_int_distribution<std::mt19937::result_type> mcpRandom(0, platform.size()-1);
-    while(!checkIfAllCoreHasTasks(solution))
+    while(!check(solution))
     {
         solution.clear();
         for(unsigned i = 0; i < tasks.size(); ++i)
@@ -109,6 +187,17 @@ std::vector<std::tuple<int, int, int>> createInitialSolution()
 
     std::cout << "Initial solution created" << std::endl;
     return solution;
+}
+
+double calculateLaxity(std::vector<std::tuple<int, int, int>> aSolution)
+{
+    double sum = 0;
+    for(auto& element : aSolution)
+    {
+        sum += platform.at(std::get<1>(element)).mCores.at(std::get<2>(element)).mWcetFactor * tasks.at(std::get<0>(element)).mWcet;
+    }
+
+    return deadlineSum - sum;
 }
 
 int main()
