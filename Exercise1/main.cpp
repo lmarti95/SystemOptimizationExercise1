@@ -199,12 +199,101 @@ double calculateLaxity(std::vector<std::tuple<int, int, int>> aSolution)
     return deadlineSum - sum;
 }
 
+std::vector<std::tuple<int, int, int>> selectRandomNeighbourhoodSwap(std::vector<std::tuple<int, int, int>> solution) 
+{
+    srand(time(NULL));
+    unsigned i = rand() % solution.size();
+    unsigned j = rand() % solution.size();
+
+    std::swap(std::get<0>(solution[i]), std::get<0>(solution[j]));
+    return solution;
+}
+
+std::vector<std::tuple<int, int, int>> selectRandomNeighbourhoodMove(std::vector<std::tuple<int, int, int>> solution) 
+{
+    int counter = 0;
+    std::vector<std::tuple<int, int, int>> newSolution = solution;
+    do {
+        srand(time(NULL));
+        unsigned i = rand() % solution.size();
+        unsigned j = rand() % solution.size();
+
+        std::get<1>(newSolution[i]) = std::get<1>(newSolution[j]);
+        std::get<2>(newSolution[i]) = std::get<2>(newSolution[j]);
+        counter++;
+
+        if (checkIfAllCoreHasTasks(newSolution))
+        {
+            return newSolution;
+        }
+
+    } while (counter < 10);
+
+    return selectRandomNeighbourhoodSwap(solution);
+}
+
+std::vector<std::tuple<int, int, int>> selectRandomNeighbourhoodSolution(int random, std::vector<std::tuple<int, int, int>> solution) 
+{
+    if (random % 2 == 0) 
+    {
+        return selectRandomNeighbourhoodMove(solution);
+    }
+    return selectRandomNeighbourhoodSwap(solution);
+}
+
+bool calculateProbability(double delta, double temp) 
+{
+    double exponential = exp((-1 / temp) * delta);
+    srand((unsigned)time(NULL));
+    double probability = (double)rand() / RAND_MAX;
+    return exponential >= probability;
+}
+
+
+void runSimulatedAnnealing(std::vector<std::tuple<int, int, int>> &initialSolution) 
+{
+    double temp = 1500.0;
+    double alpha = 0.89;
+    int n = 0;
+    double delta = 0.0;
+    double probability = 0.0;
+    double solutionLaxity = 0.0;
+    double randomSolutionLaxity = 0.0;
+    std::vector<std::tuple<int, int, int>> solution = initialSolution;
+    while (temp > 10) 
+    {
+        // check deadlines are met
+        // if deadlines are not met, do not change temperature, generate new random solution
+        n++;
+        std::vector<std::tuple<int, int, int>> randomSolution;
+        do {
+            randomSolution = selectRandomNeighbourhoodSolution(n, solution);
+        } while (!checkDeadline(randomSolution));
+
+        //if deadlines are met, run cost function to calculate laxity for both solutions
+        solutionLaxity = calculateLaxity(solution);
+        randomSolutionLaxity = calculateLaxity(randomSolution);
+
+        // calculate delta
+        delta = randomSolutionLaxity - solutionLaxity;
+
+        if (delta < 0 || calculateProbability(delta, temp)) 
+        {
+            solution = randomSolution;
+            printf("%f\n", randomSolutionLaxity);
+        }
+
+        temp *= alpha;
+    }
+}
+
 int main()
 {
     if(!readIn("Exercise1/small.xml"))
         return -1;
 
-    createInitialSolution();
+    std::vector<std::tuple<int, int, int>> initialSolution = createInitialSolution();
+    runSimulatedAnnealing(initialSolution);
 
     return 0;
 }
