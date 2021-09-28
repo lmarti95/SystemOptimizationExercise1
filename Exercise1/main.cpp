@@ -201,9 +201,11 @@ double calculateLaxity(std::vector<std::tuple<int, int, int>> aSolution)
 
 std::vector<std::tuple<int, int, int>> selectRandomNeighbourhoodSwap(std::vector<std::tuple<int, int, int>> solution) 
 {
-    srand(time(NULL));
-    unsigned i = rand() % solution.size();
-    unsigned j = rand() % solution.size();
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> generate(0, solution.size() - 1);
+    unsigned i = generate(rng);
+    unsigned j = generate(rng);
 
     std::swap(std::get<0>(solution[i]), std::get<0>(solution[j]));
     return solution;
@@ -212,11 +214,14 @@ std::vector<std::tuple<int, int, int>> selectRandomNeighbourhoodSwap(std::vector
 std::vector<std::tuple<int, int, int>> selectRandomNeighbourhoodMove(std::vector<std::tuple<int, int, int>> solution) 
 {
     int counter = 0;
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> generate(0, solution.size() - 1);
+
     std::vector<std::tuple<int, int, int>> newSolution = solution;
     do {
-        srand(time(NULL));
-        unsigned i = rand() % solution.size();
-        unsigned j = rand() % solution.size();
+        unsigned i = generate(rng);
+        unsigned j = generate(rng);
 
         std::get<1>(newSolution[i]) = std::get<1>(newSolution[j]);
         std::get<2>(newSolution[i]) = std::get<2>(newSolution[j]);
@@ -243,9 +248,13 @@ std::vector<std::tuple<int, int, int>> selectRandomNeighbourhoodSolution(int ran
 
 bool calculateProbability(double delta, double temp) 
 {
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_real_distribution<double> generate(0.0, 1.0);
+
     double exponential = exp((-1 / temp) * delta);
     srand((unsigned)time(NULL));
-    double probability = (double)rand() / RAND_MAX;
+    double probability = generate(rng);
     return exponential >= probability;
 }
 
@@ -277,12 +286,11 @@ void runSimulatedAnnealing(std::vector<std::tuple<int, int, int>> &initialSoluti
         // calculate delta
         delta = randomSolutionLaxity - solutionLaxity;
 
-        if (delta < 0 || calculateProbability(delta, temp)) 
+        if (delta < 0 || calculateProbability(delta, temp))
         {
             solution = randomSolution;
             printf("%f\n", randomSolutionLaxity);
         }
-
         temp *= alpha;
     }
 }
