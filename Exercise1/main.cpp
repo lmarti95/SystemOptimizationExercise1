@@ -6,6 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+using namespace std;
 
 struct Task {
     int mDeadline;
@@ -22,20 +23,19 @@ struct Core {
 
 struct MCP {
     int mId;
-    std::vector<Core> mCores;
+   vector<Core> mCores;
 }typedef MCP;
 
-std::vector<Task> tasks;
-std::vector<MCP> platform;
+vector<Task> tasks;
+vector<MCP> platform;
 
-void readIn(std::string fileName)
+void readIn(string fileName)
 {
     pugi::xml_document doc;
 
     pugi::xml_parse_result result = doc.load_file(fileName.c_str());
     if(!result)
-        std::cout << "Didn't find the specified file" << std::endl;
-
+        cout << "Didn't find the specified file" << endl;
 
     for(pugi::xml_node readinTask : doc.child("Model").child("Application").children("Task"))
     {
@@ -62,17 +62,17 @@ void readIn(std::string fileName)
         }
         platform.push_back(mcp);
     }
-    std::cout << "Read in success" << std::endl;
+    cout << "Read in success" << endl;
 }
 
-bool checkIfAllCoreHasTasks(std::vector<std::pair<std::string, std::string>> solution)
+bool checkIfAllCoreHasTasks(vector<pair<string, string>> solution)
 {
     for(unsigned i = 0; i < platform.size(); ++i)
     {
         for(unsigned j = 0; j < platform.at(i).mCores.size(); ++j)
         {
-            if(std::find_if(solution.begin(), solution.end(), [i, j](std::pair<std::string, std::string > pair){
-                return pair.second.compare(std::to_string(i) + "." + std::to_string(j)) == 0;
+            if(find_if(solution.begin(), solution.end(), [i, j](pair<string, string > pair){
+                return pair.second.compare(to_string(i) + "." + to_string(j)) == 0;
                 }) == solution.end())
                 return false;
         }
@@ -82,29 +82,37 @@ bool checkIfAllCoreHasTasks(std::vector<std::pair<std::string, std::string>> sol
 }
 
 //first task id, second mcpid.coreid
-std::vector<std::pair<std::string, std::string>> createInitialSolution()
+vector<pair<string, string>> createInitialSolution()
 {
-    std::vector<std::pair<std::string, std::string>> solution;
+    vector<pair<string, string>> solution;
 
-    std::random_device dev;
-    std::mt19937 rng(dev());
-    std::uniform_int_distribution<std::mt19937::result_type> mcpRandom(0, platform.size()-1);
+    random_device dev;
+    mt19937 rng(dev());
+    uniform_int_distribution<mt19937::result_type> mcpRandom(0, platform.size()-1);
     while(!checkIfAllCoreHasTasks(solution))
     {
         solution.clear();
         for(unsigned i = 0; i < tasks.size(); ++i)
         {
             int mcp = mcpRandom(rng);
-            std::uniform_int_distribution<std::mt19937::result_type> coreRandom(0, platform.at(mcp).mCores.size() - 1);
+            uniform_int_distribution<mt19937::result_type> coreRandom(0, platform.at(mcp).mCores.size() - 1);
             int core = coreRandom(rng);
 
-            solution.push_back(std::make_pair(std::to_string(i), std::to_string(mcp) + "." + std::to_string(core)));
+            solution.push_back(make_pair(to_string(i), to_string(mcp) + "." + to_string(core)));
         }
     }
 
-    std::cout << "Initial solution created" << std::endl;
-    return solution;
+    cout << "Initial solution created" << endl;
+   return solution;
 }
+
+double calculateWCRT(vector<pair<string, string>> solution) {
+    // calculate WCRT for each task
+    double wcrt = 0.0;
+    // 
+    return wcrt;
+}
+
 
 int main()
 {
