@@ -216,15 +216,20 @@ std::vector<std::tuple<int, int, int>> selectRandomNeighbourhoodMove(std::vector
     int counter = 0;
     std::random_device dev;
     std::mt19937 rng(dev());
-    std::uniform_int_distribution<std::mt19937::result_type> generate(0, solution.size() - 1);
+    std::uniform_int_distribution<std::mt19937::result_type> generate_mcp(0, platform.size() - 1);
+    std::uniform_int_distribution<std::mt19937::result_type> generate_task(0, tasks.size() - 1);
 
     std::vector<std::tuple<int, int, int>> newSolution = solution;
     do {
-        unsigned i = generate(rng);
-        unsigned j = generate(rng);
+        unsigned mcp = generate_mcp(rng);
+        std::uniform_int_distribution<std::mt19937::result_type> generate_core(0, platform.at(mcp).mCores.size() - 1);
+        unsigned core = generate_core(rng);
+        unsigned task = generate_task(rng);
 
-        std::get<1>(newSolution[i]) = std::get<1>(newSolution[j]);
-        std::get<2>(newSolution[i]) = std::get<2>(newSolution[j]);
+
+
+        std::get<1>(newSolution[task]) = mcp;
+        std::get<2>(newSolution[task]) = core;
         counter++;
 
         if (checkIfAllCoreHasTasks(newSolution))
@@ -232,7 +237,7 @@ std::vector<std::tuple<int, int, int>> selectRandomNeighbourhoodMove(std::vector
             return newSolution;
         }
 
-    } while (counter < 10);
+    } while (counter < 50);
 
     return selectRandomNeighbourhoodSwap(solution);
 }
@@ -260,15 +265,14 @@ bool calculateProbability(double delta, double temp)
 
 void runSimulatedAnnealing(std::vector<std::tuple<int, int, int>> &initialSolution) 
 {
-    double temp = 1500.0;
-    double alpha = 0.89;
+    double temp = 30000000;
+    double alpha = 0.99;
     int n = 0;
     double delta = 0.0;
-    double probability = 0.0;
     double solutionLaxity = 0.0;
     double randomSolutionLaxity = 0.0;
     std::vector<std::tuple<int, int, int>> solution = initialSolution;
-    while (temp > 10) 
+    while (temp > 1) 
     {
         // check deadlines are met
         // if deadlines are not met, do not change temperature, generate new random solution
@@ -283,7 +287,7 @@ void runSimulatedAnnealing(std::vector<std::tuple<int, int, int>> &initialSoluti
         randomSolutionLaxity = calculateLaxity(randomSolution);
 
         // calculate delta
-        delta = randomSolutionLaxity - solutionLaxity;
+        delta = solutionLaxity - randomSolutionLaxity;
 
         if (delta < 0 || calculateProbability(delta, temp))
         {
@@ -292,11 +296,16 @@ void runSimulatedAnnealing(std::vector<std::tuple<int, int, int>> &initialSoluti
         }
         temp *= alpha;
     }
+
+    for(auto& s : solution)
+    {
+        std::cout << std::get<0>(s) << std::get<1>(s) << std::get<2>(s) << std::endl;
+    }
 }
 
 int main()
 {
-    if(!readIn("Exercise1/small.xml"))
+    if(!readIn("C:/Users/Marton/Dropbox/DTU/3rd semester/System optimization/SystemOptimizationExercise1/Exercise1/small.xml"))
         return -1;
 
     std::vector<std::tuple<int, int, int>> initialSolution = createInitialSolution();
