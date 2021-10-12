@@ -349,7 +349,8 @@ void writeOutput(std::vector<std::tuple<int, int, int>> aSolution)
 
 int main()
 {
-    if(!readIn("Exercise1/medium.xml"))
+    //add file path here, might need to use absolute path
+    if(!readIn("small.xml"))
         return -1;
 
     std::vector<std::tuple<int, int, int>> initialSolution = createInitialSolution();
