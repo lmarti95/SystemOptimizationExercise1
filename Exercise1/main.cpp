@@ -7,12 +7,13 @@
 #include <algorithm>
 #include <string>
 #include <tuple>
+#include <math.h>
 
 struct Task {
     int mDeadline;
     int mId;
     int mPeriod;
-    int mWcet;
+    double mWcet;
     double mPriority;
 }typedef Task;
 
@@ -31,6 +32,7 @@ std::vector<MCP> platform;
 
 int deadlineSum = 0;
 
+//read in the html file and save the data
 bool readIn(std::string fileName)
 {
     pugi::xml_document doc;
@@ -89,6 +91,7 @@ bool checkIfAllCoreHasTasks(std::vector<std::tuple<int, int, int>> solution)
     return true;
 }
 
+//calculate greatest common divisor
 long long gcd(long long int a, long long int b)
 {
     if(b == 0)
@@ -96,11 +99,13 @@ long long gcd(long long int a, long long int b)
     return gcd(b, a % b);
 }
 
+//calculate least common multiple
 long long lcm(long long a, long long b)
 {
     return (a / gcd(a, b)) * b;
 }
 
+//See if the tasks on a core meet the deadline
 bool checkCoreDeadline(int i, int j, std::vector<std::tuple<int, int, int>> aSolution)
 {
     std::vector<int> taskIDs;
@@ -163,7 +168,7 @@ bool check(std::vector<std::tuple<int, int, int>> aSolution)
     return true;
 }
 
-//first task id, second mcpid.coreid
+//create an initial solution, where in the vector the first is task id, second mcpid third coreid
 std::vector<std::tuple<int, int, int>> createInitialSolution()
 {
     std::vector<std::tuple<int, int, int>> solution;
@@ -199,6 +204,7 @@ double calculateLaxity(std::vector<std::tuple<int, int, int>> aSolution)
     return deadlineSum - sum;
 }
 
+//swap two tasks
 std::vector<std::tuple<int, int, int>> selectRandomNeighbourhoodSwap(std::vector<std::tuple<int, int, int>> solution) 
 {
     std::random_device dev;
@@ -211,6 +217,7 @@ std::vector<std::tuple<int, int, int>> selectRandomNeighbourhoodSwap(std::vector
     return solution;
 }
 
+//move a task from one core to an other
 std::vector<std::tuple<int, int, int>> selectRandomNeighbourhoodMove(std::vector<std::tuple<int, int, int>> solution) 
 {
     int counter = 0;
@@ -263,10 +270,10 @@ bool calculateProbability(double delta, double temp)
 }
 
 
-void runSimulatedAnnealing(std::vector<std::tuple<int, int, int>> &initialSolution) 
+std::vector<std::tuple<int, int, int>> runSimulatedAnnealing(std::vector<std::tuple<int, int, int>> &initialSolution)
 {
     double temp = 30000000;
-    double alpha = 0.99;
+    double alpha = 0.995;
     int n = 0;
     double delta = 0.0;
     double solutionLaxity = 0.0;
@@ -292,24 +299,63 @@ void runSimulatedAnnealing(std::vector<std::tuple<int, int, int>> &initialSoluti
         if (delta < 0 || calculateProbability(delta, temp))
         {
             solution = randomSolution;
-            printf("%f\n", randomSolutionLaxity);
         }
         temp *= alpha;
     }
 
-    for(auto& s : solution)
+    return solution;
+}
+
+//save solution to xml
+void writeOutput(std::vector<std::tuple<int, int, int>> aSolution)
+{
+    std::sort(aSolution.begin(), aSolution.end(), [](std::tuple<int, int, int> sol1, std::tuple<int, int, int> sol2)
     {
-        std::cout << std::get<0>(s) << std::get<1>(s) << std::get<2>(s) << std::endl;
+            if(std::get<1>(sol1) == std::get<1>(sol2))
+            {
+                return std::get<2>(sol1) < std::get<2>(sol2);
+            }
+            else
+            {
+                return std::get<1>(sol1) < std::get<1>(sol2);
+            };
+    });
+
+    pugi::xml_document doc;
+
+    pugi::xml_node node = doc.append_child("solution");
+
+    for(auto& sol : aSolution)
+    {
+        auto taskNode = node.append_child("Task");
+
+        taskNode.append_attribute("Id") = std::get<0>(sol);
+        taskNode.append_attribute("MCP") = std::get<1>(sol);
+        taskNode.append_attribute("Core") = std::get<2>(sol);
+        taskNode.append_attribute("WCRT") = round(tasks.at(std::get<0>(sol)).mWcet*platform.at(std::get<1>(sol)).mCores.at(std::get<2>(sol)).mWcetFactor);
     }
+    
+
+    std::string laxity = "Total Laxity: " + std::to_string((int)round(calculateLaxity(aSolution)));
+
+    doc.insert_child_after(pugi::node_comment, node).set_value(laxity.c_str());
+
+    doc.print(std::cout);
+    
+    doc.save_file("solution.xml", PUGIXML_TEXT("  "));
+
+    std::cout << "solution.xml saved" << std::endl;
 }
 
 int main()
 {
-    if(!readIn("C:/Users/Marton/Dropbox/DTU/3rd semester/System optimization/SystemOptimizationExercise1/Exercise1/small.xml"))
+    if(!readIn("Exercise1/medium.xml"))
         return -1;
 
     std::vector<std::tuple<int, int, int>> initialSolution = createInitialSolution();
-    runSimulatedAnnealing(initialSolution);
+    auto solution = runSimulatedAnnealing(initialSolution);
+
+    writeOutput(solution);
 
     return 0;
 }
