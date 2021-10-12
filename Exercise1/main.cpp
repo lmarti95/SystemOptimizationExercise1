@@ -307,7 +307,7 @@ std::vector<std::tuple<int, int, int>> runSimulatedAnnealing(std::vector<std::tu
 }
 
 //save solution to xml
-void writeOutput(std::vector<std::tuple<int, int, int>> aSolution)
+void writeOutput(std::vector<std::tuple<int, int, int>> aSolution, std::string aFilepath)
 {
     std::sort(aSolution.begin(), aSolution.end(), [](std::tuple<int, int, int> sol1, std::tuple<int, int, int> sol2)
     {
@@ -341,22 +341,25 @@ void writeOutput(std::vector<std::tuple<int, int, int>> aSolution)
     doc.insert_child_after(pugi::node_comment, node).set_value(laxity.c_str());
 
     doc.print(std::cout);
-    
-    doc.save_file("solution.xml", PUGIXML_TEXT("  "));
 
-    std::cout << "solution.xml saved" << std::endl;
+    std::string filename = "solution_" + aFilepath;
+    
+    doc.save_file(filename.c_str(), PUGIXML_TEXT("  "));
+
+    std::cout << filename << std::endl;
 }
 
 int main()
 {
-    //add file path here, might need to use absolute path
-    if(!readIn("small.xml"))
+    //add file path here
+    std::string filepath = "large.xml";
+    if(!readIn(filepath))
         return -1;
 
     std::vector<std::tuple<int, int, int>> initialSolution = createInitialSolution();
     auto solution = runSimulatedAnnealing(initialSolution);
 
-    writeOutput(solution);
+    writeOutput(solution, filepath);
 
     return 0;
 }
